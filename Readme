@@ -1,0 +1,51 @@
+# 📡 Port Scanner Network Scanner  
+### *Tableau de Bord de Cybersécurité — Scan d’Hôtes & Ports Ouverts avec Nmap*
+
+Port Scanner Network Scanner est une application web basée sur **Flask** qui permet d’explorer un réseau, détecter les hôtes actifs et identifier les ports ouverts grâce au puissant outil **Nmap**.
+
+L’interface propose un tableau de bord simple, clair et réactif, idéal pour la supervision réseau ou la formation en cybersécurité.
+
+---
+
+## 🚀 Fonctionnement du Projet
+
+L’application suit le workflow suivant :
+
+### **1️⃣ Interface Utilisateur (Frontend)**
+- Accessible via le navigateur (`templates/index.html`).
+- Permet de lancer un scan en entrant une plage réseau (ex : `192.168.1.0/24`).
+- Affiche les résultats du dernier scan (si disponible).
+
+### **2️⃣ Serveur Flask (Backend)**
+- Le fichier `app.py` gère les routes et l’API.
+- Lorsqu’un scan est lancé, Flask envoie une requête POST.
+- Un thread séparé appelle `run_nmap_scan` pour éviter de bloquer l’interface.
+
+### **3️⃣ Moteur de Scan (Nmap)**
+- La fonction `run_nmap_scan` exécute la commande Nmap correspondante.
+- Les résultats (réels ou simulés) sont collectés et formatés.
+
+### **4️⃣ Stockage & Rafraîchissement des Données**
+- Les résultats sont enregistrés dans `scan_results.json`.
+- Le tableau de bord vérifie régulièrement l’état du scan.
+- L’interface charge automatiquement les nouveaux résultats lorsqu’ils sont prêts.
+
+---
+
+## ⚙️ Prérequis et Installation
+
+### **1. Installer Python et les dépendances**
+
+Ce projet utilise Python 3.x.
+
+#### **a) Cloner le projet**
+```bash
+git clone https://github.com/jeanlucndato/PortScanner.git
+cd PortScanner
+```
+#### **b) Installer les dépendances**
+pip install -r requirements.txt
+
+#### **c) lunch the app**
+python app.py
+```bash
