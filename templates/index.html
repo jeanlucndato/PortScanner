@@ -1,350 +1,41 @@
-<!DOCTYPE html>
-<html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scanning - Scanner Réseau & Tableau de Bord</title>
-    <style>
-      /* Styles CSS de base pour un tableau de bord attirant */
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f4f7f6;
-        color: #333;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-      header {
-        background-color: #2c3e50;
-        color: white;
-        padding: 1rem 2rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      header h1 {
-        margin: 0;
-        font-size: 1.8rem;
-      }
-      .container {
-        flex-grow: 1;
-        padding: 2rem;
-        max-width: 1200px;
-        margin: 20px auto;
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      }
-      .section-title {
-        color: #2c3e50;
-        border-bottom: 2px solid #3498db;
-        padding-bottom: 0.5rem;
-        margin-top: 2rem;
-        margin-bottom: 1.5rem;
-        font-size: 1.5rem;
-      }
-      .card {
-        background-color: #ecf0f1;
-        border-radius: 6px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      }
-      .card h3 {
-        color: #34495e;
-        margin-top: 0;
-        margin-bottom: 0.8rem;
-        font-size: 1.2rem;
-      }
-      .status-message {
-        padding: 1rem;
-        border-radius: 5px;
-        margin-bottom: 1rem;
-        font-weight: bold;
-      }
-      .status-success {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-      }
-      .status-error {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-      }
-      .status-info {
-        background-color: #d1ecf1;
-        color: #0c5460;
-        border: 1px solid #bee5eb;
-      }
-
-      .btn {
-        background-color: #3498db;
-        color: white;
-        padding: 0.8rem 1.5rem;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: background-color 0.3s ease;
-      }
-      .btn:hover {
-        background-color: #2980b9;
-      }
-      .btn:disabled {
-        background-color: #95a5a6;
-        cursor: not-allowed;
-      }
-      .input-group {
-        margin-bottom: 1rem;
-      }
-      .input-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: bold;
-      }
-      .input-group input[type="text"] {
-        width: calc(100% - 22px);
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 1rem;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-      }
-      table th,
-      table td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: left;
-      }
-      table th {
-        background-color: #f2f2f2;
-        color: #333;
-      }
-      footer {
-        margin-top: auto;
-        background-color: #34495e;
-        color: white;
-        text-align: center;
-        padding: 1rem 0;
-        font-size: 0.9rem;
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>Hacking - Scanner Réseau</h1>
-      <div>
-        {% if results.last_scan_time %}
-        <span class="status-info"
-          >Dernier scan: {{ results.last_scan_time }}</span
-        >
-        {% else %}
-        <span class="status-info">Aucun scan n'a encore été effectué.</span>
-        {% endif %}
-      </div>
-    </header>
-
-    <div class="container">
-      <h2 class="section-title">Lancer un nouveau scan</h2>
-      <div class="input-group">
-        <label for="network_range">Plage réseau (ex: 192.168.1.0/24)</label>
-        <input type="text" id="network_range" value="192.168.1.0/24" />
-      </div>
-      <button id="startScanBtn" class="btn" onclick="startScan()">
-        {% if is_scanning %}Scan en cours...{% else %}Lancer le scan{% endif %}
-      </button>
-      <div
-        id="scanStatusMessage"
-        class="status-message"
-        style="display: none"
-      ></div>
-
-      <h2 class="section-title">Hôtes actifs trouvés</h2>
-      <div id="activeHostsList">
-        {% if results.active_hosts %}
-        <table>
-          <thead>
-            <tr>
-              <th>IP</th>
-              <th>Adresse MAC</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for host in results.active_hosts %}
-            <tr>
-              <td>{{ host.ip }}</td>
-              <td>{{ host.mac }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <p>Aucun hôte actif trouvé ou scan non encore effectué.</p>
-        {% endif %}
-      </div>
-
-      <h2 class="section-title">Ports ouverts par hôte</h2>
-      <div id="openPortsList">
-        {% if results.open_ports_by_host %} {% for ip, ports in
-        results.open_ports_by_host.items() %}
-        <div class="card">
-          <h3>{{ ip }}</h3>
-          {% if ports %}
-          <table>
-            <thead>
-              <tr>
-                <th>Port</th>
-                <th>Service</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for port_info in ports %}
-              <tr>
-                <td>{{ port_info.port }}</td>
-                <td>{{ port_info.service }}</td>
-                <td>{{ port_info.status }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          {% else %}
-          <p>Aucun port ouvert trouvé pour cet hôte.</p>
-          {% endif %}
-        </div>
-        {% endfor %} {% else %}
-        <p>Aucun port ouvert trouvé ou scan non encore effectué.</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <footer>&copy; 2023 scanner - Cybersécurité</footer>
-
-    <script>
-      // Fonction pour mettre à jour l'UI avec les derniers résultats
-      async function updateDashboard() {
-        const statusResponse = await fetch("/scan/status");
-        const statusData = await statusResponse.json();
-        const startScanBtn = document.getElementById("startScanBtn");
-        const scanStatusMessage = document.getElementById("scanStatusMessage");
-
-        if (statusData.is_scanning) {
-          startScanBtn.innerText = "Scan en cours...";
-          startScanBtn.disabled = true;
-          scanStatusMessage.style.display = "block";
-          scanStatusMessage.className = "status-message status-info";
-          scanStatusMessage.innerText =
-            "Un scan est actuellement en cours. La page se mettra à jour automatiquement.";
-          // Actualiser les résultats toutes les 5 secondes si un scan est en cours
-          setTimeout(updateDashboard, 5000);
-        } else {
-          startScanBtn.innerText = "Lancer le scan";
-          startScanBtn.disabled = false;
-          scanStatusMessage.style.display = "none";
-
-          // Si le scan est terminé, récupérer les résultats et mettre à jour le DOM
-          const resultsResponse = await fetch("/scan/results");
-          const resultsData = await resultsResponse.json();
-
-          document.querySelector("header div span").innerText =
-            resultsData.last_scan_time
-              ? `Dernier scan: ${resultsData.last_scan_time}`
-              : "Aucun scan n'a encore été effectué.";
-
-          // Mise à jour de la liste des hôtes actifs
-          const activeHostsList = document.getElementById("activeHostsList");
-          if (resultsData.active_hosts && resultsData.active_hosts.length > 0) {
-            let hostTable = `<table><thead><tr><th>IP</th><th>Adresse MAC</th></tr></thead><tbody>`;
-            resultsData.active_hosts.forEach((host) => {
-              hostTable += `<tr><td>${host.ip}</td><td>${host.mac}</td></tr>`;
-            });
-            hostTable += `</tbody></table>`;
-            activeHostsList.innerHTML = hostTable;
-          } else {
-            activeHostsList.innerHTML =
-              "<p>Aucun hôte actif trouvé ou scan non encore effectué.</p>";
-          }
-
-          // Mise à jour de la liste des ports ouverts
-          const openPortsList = document.getElementById("openPortsList");
-          if (
-            resultsData.open_ports_by_host &&
-            Object.keys(resultsData.open_ports_by_host).length > 0
-          ) {
-            let portsHtml = "";
-            for (const ip in resultsData.open_ports_by_host) {
-              const ports = resultsData.open_ports_by_host[ip];
-              portsHtml += `<div class="card"><h3>${ip}</h3>`;
-              if (ports.length > 0) {
-                portsHtml += `<table><thead><tr><th>Port</th><th>Service</th><th>Statut</th></tr></thead><tbody>`;
-                ports.forEach((port_info) => {
-                  portsHtml += `<tr><td>${port_info.port}</td><td>${port_info.service}</td><td>${port_info.status}</td></tr>`;
-                });
-                portsHtml += `</tbody></table>`;
-              } else {
-                portsHtml += `<p>Aucun port ouvert trouvé pour cet hôte.</p>`;
-              }
-              portsHtml += `</div>`;
-            }
-            openPortsList.innerHTML = portsHtml;
-          } else {
-            openPortsList.innerHTML =
-              "<p>Aucun port ouvert trouvé ou scan non encore effectué.</p>";
-          }
-        }
-      }
-
-      // Fonction pour déclencher le scan via l'API Flask
-      async function startScan() {
-        const networkRange = document.getElementById("network_range").value;
-        const scanStatusMessage = document.getElementById("scanStatusMessage");
-        const startScanBtn = document.getElementById("startScanBtn");
-
-        startScanBtn.disabled = true;
-        startScanBtn.innerText = "Démarrage du scan...";
-        scanStatusMessage.style.display = "block";
-        scanStatusMessage.className = "status-message status-info";
-        scanStatusMessage.innerText = "Démarrage du scan réseau...";
-
-        try {
-          const response = await fetch("/scan/start", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ network_range: networkRange }),
-          });
-          const data = await response.json();
-
-          if (response.ok) {
-            scanStatusMessage.className = "status-message status-success";
-            scanStatusMessage.innerText = data.message;
-            updateDashboard(); // Commencer à surveiller le scan
-          } else {
-            scanStatusMessage.className = "status-message status-error";
-            scanStatusMessage.innerText =
-              data.message || "Erreur inconnue lors du démarrage du scan.";
-            startScanBtn.disabled = false;
-            startScanBtn.innerText = "Lancer le scan";
-          }
-        } catch (error) {
-          scanStatusMessage.className = "status-message status-error";
-          scanStatusMessage.innerText = `Erreur réseau: ${error.message}`;
-          startScanBtn.disabled = false;
-          startScanBtn.innerText = "Lancer le scan";
-        }
-      }
-
-      // Mettre à jour le tableau de bord au chargement initial et si un scan est en cours
-      document.addEventListener("DOMContentLoaded", updateDashboard);
-    </script>
-  </body>
-</html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Network Inventory Scanner</title>
+  <style>
+    :root{font:16px/1.5 system-ui,sans-serif;color:#17212b;background:#f1f5f8}*{box-sizing:border-box}body{margin:0}header{background:#122638;color:#fff;padding:1.25rem max(1rem,calc((100% - 1180px)/2))}main{max-width:1180px;margin:1.5rem auto;padding:0 1rem}.panel{background:#fff;border:1px solid #dce4ea;border-radius:12px;padding:1.25rem;margin:1rem 0;box-shadow:0 4px 16px #16324a0a}h1,h2{margin:.2rem 0 .8rem}h1{font-size:1.4rem}h2{font-size:1.15rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem}label{display:block;font-weight:650;margin-bottom:.25rem}input,select,button{font:inherit;padding:.65rem;border:1px solid #bac7d1;border-radius:7px;width:100%}button,.button{background:#086c9c;color:#fff;border:0;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}.button{padding:.55rem .8rem;border-radius:6px}button:disabled{opacity:.55;cursor:wait}.hint,.muted{color:#526676;font-size:.9rem}.banner{padding:.7rem;border-radius:7px;background:#e6f4fa;margin:.7rem 0}.error{background:#fff0ed;color:#8b2412}.ok{background:#e8f7ee;color:#155c34}.progress{height:10px;background:#dce7ed;border-radius:8px;overflow:hidden}.progress i{display:block;height:100%;background:#159266;transition:width .2s}table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid #e1e8ed;padding:.55rem}th{cursor:pointer}td code{font-size:.9rem}.table-wrap{overflow:auto}.host{border:1px solid #e1e8ed;border-radius:8px;margin:.7rem 0;padding:.8rem}.pill{font-size:.78rem;border-radius:20px;padding:.15rem .55rem;background:#e8eef3}.open{background:#e1f5e9}.closed{background:#edf0f2}.filtered{background:#fff3d8}.history{display:grid;grid-template-columns:1fr auto;gap:.5rem;padding:.5rem 0;border-bottom:1px solid #eee}@media(max-width:600px){main{margin:.5rem auto}.panel{padding:.9rem}}
+  </style>
+</head>
+<body>
+<header><h1>Network Inventory Scanner</h1><span>Authorized network assessment · authenticated access</span></header>
+<main>
+  <section class="panel">
+    <h2>Start a scan</h2>
+    <p class="hint">Enter the IPv4 CIDR you are authorized to assess. Maximum target size: {{ max_hosts }} addresses. Timeouts are capped at {{ max_timeout }} seconds. Host discovery tries ARP first and falls back to TCP probes if raw-packet access is unavailable.</p>
+    <form id="scanForm"><div class="grid">
+      <div><label for="network">IPv4 address or CIDR</label><input id="network" required placeholder="192.168.1.0/24"></div>
+      <div><label for="profile">Port profile</label><select id="profile"><option value="common">Common services</option><option value="web">Web</option><option value="database">Database</option></select></div>
+      <div><label for="ports">Custom TCP ports (optional)</label><input id="ports" placeholder="22,80,443,8080"></div>
+      <div><label for="timeout">Per-port timeout (seconds)</label><input id="timeout" type="number" min="0.1" max="{{ max_timeout }}" step="0.1" value="0.5"></div>
+    </div><p><label><input id="authorized" type="checkbox" required style="width:auto"> I am authorized to scan this network.</label></p><p><button id="start">Queue scan</button></p></form>
+    <div id="message" class="banner" hidden></div><div id="job" hidden><b id="jobLabel"></b><div class="progress"><i id="bar" style="width:0%"></i></div><small id="jobDetail" class="muted"></small></div>
+  </section>
+  <section class="panel"><h2>Latest completed scan</h2><div id="scanMeta" class="muted"></div><div class="grid" style="margin:.8rem 0"><input id="search" placeholder="Filter by IP, hostname, MAC, port, or service"><select id="statusFilter"><option value="">All port states</option><option>open</option><option>closed</option><option>filtered</option></select><select id="sort"><option value="ip">Sort by IP</option><option value="hostname">Sort by hostname</option><option value="ports">Sort by open port count</option></select></div><p><a id="export" class="button" href="/scan/export.csv">Export CSV</a> <button id="compare" type="button" style="width:auto">Compare with previous scan</button></p><div id="diff" class="hint"></div><div id="hosts"></div></section>
+  <section class="panel"><h2>Recent jobs</h2><div id="history"></div></section>
+</main>
+<script>
+const initial = {{ payload|tojson }}; const initialJobs = {{ jobs|tojson }};
+const el=id=>document.getElementById(id); let latest=initial, jobs=initialJobs;
+function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
+function showMessage(text,kind=''){const m=el('message');m.hidden=!text;m.textContent=text;m.className='banner '+kind}
+function drawHosts(){const root=el('hosts');root.replaceChildren();let hosts=[...(latest.hosts||[])];const q=el('search').value.toLowerCase(), filter=el('statusFilter').value, sort=el('sort').value;hosts.sort((a,b)=>sort==='hostname'?((a.hostname||'').localeCompare(b.hostname||'')):sort==='ports'?b.ports.filter(p=>p.status==='open').length-a.ports.filter(p=>p.status==='open').length:a.ip.localeCompare(b.ip,undefined,{numeric:true}));let count=0;
+ for(const h of hosts){const all=[h.ip,h.hostname||'',h.mac||'',...h.ports.flatMap(p=>[p.port,p.service,p.status])].join(' ').toLowerCase();if(q&&!all.includes(q))continue;const ports=h.ports.filter(p=>(!filter||p.status===filter)&&(!q||[h.ip,h.hostname||'',h.mac||'',p.port,p.service,p.status].join(' ').toLowerCase().includes(q)));if(filter&&!ports.length)continue;count++;const card=node('article',undefined,'host');const title=node('b',h.ip);card.append(title);if(h.hostname)card.append(node('span',' · '+h.hostname,'muted'));card.append(node('div','MAC: '+(h.mac||'unknown'),'muted'));const table=node('table'),head=node('tr');for(const x of ['Port','Service','State'])head.append(node('th',x));table.append(head);for(const p of ports){const row=node('tr');row.append(node('td',String(p.port)),node('td',p.service||'unknown'));const state=node('td');state.append(node('span',p.status,'pill '+p.status));row.append(state);table.append(row)}if(ports.length)card.append(table);else card.append(node('small','No ports match current filters.','muted'));root.append(card)}if(!count)root.append(node('p','No hosts match the current filters.','muted'));
+}
+function draw(){const scan=latest.scan;el('scanMeta').textContent=scan?`Scan #${scan.id} · ${scan.network_range} · ${scan.profile} · ${new Date(scan.end_time).toLocaleString()} · ${latest.hosts.length} hosts`:'No completed scans yet.';el('export').hidden=!scan;drawHosts();drawHistory()}
+function drawHistory(){const root=el('history');root.replaceChildren();for(const j of jobs){const row=node('div',undefined,'history');row.append(node('span',`#${j.id} · ${j.network_range} · ${j.profile} · ${j.status} · ${j.progress}%`));const link=node('a','CSV');link.href='/scan/export.csv?job_id='+encodeURIComponent(j.id);link.className='button';if(j.status!=='completed')link.hidden=true;row.append(link);root.append(row)}}
+async function refresh(){try{const s=await fetch('/scan/status').then(r=>r.json());if(s.job){const j=s.job;el('job').hidden=false;el('jobLabel').textContent=`Scan #${j.id}: ${j.status}`;el('bar').style.width=j.progress+'%';el('jobDetail').textContent=[j.current_target&&`Current host: ${j.current_target}`,j.error_message].filter(Boolean).join(' · ');if(j.status==='failed')showMessage(j.error_message||'Scan failed.','error');if(j.status==='completed'){latest=await fetch('/scan/results').then(r=>r.json());jobs=await fetch('/scan/history').then(r=>r.json());draw()}}}catch(e){showMessage('Could not refresh scan status: '+e.message,'error')}}
+el('scanForm').addEventListener('submit',async e=>{e.preventDefault();showMessage('Validating and queueing scan…');el('start').disabled=true;try{const r=await fetch('/scan/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({network_range:el('network').value,profile:el('profile').value,ports:el('ports').value,timeout:el('timeout').value,authorized:el('authorized').checked})});const data=await r.json();if(!r.ok)throw Error(data.message||'Could not queue scan');showMessage('Scan queued as job #'+data.id,'ok');await refresh()}catch(err){showMessage(err.message,'error')}finally{el('start').disabled=false}});
+for(const id of ['search','statusFilter','sort'])el(id).addEventListener('input',drawHosts);el('compare').addEventListener('click',async()=>{if(!latest.scan)return showMessage('Run a completed scan first.');try{const d=await fetch(`/scan/${latest.scan.id}/diff`).then(r=>r.json());const root=el('diff');root.replaceChildren();root.append(node('b',`New hosts: ${d.new_hosts.length}; changed port states: ${d.changed_ports.length}`));for(const ip of d.new_hosts)root.append(node('div',`New host: ${ip}`));for(const x of d.changed_ports)root.append(node('div',`${x.ip}:${x.port} ${x.before||'not scanned'} → ${x.after||'not scanned'}`))}catch(e){showMessage(e.message,'error')}});draw();refresh();setInterval(refresh,2000);
+</script>
+</body></html>
