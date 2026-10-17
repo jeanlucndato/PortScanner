@@ -63,13 +63,34 @@ For local use:
 
 Open <http://127.0.0.1:5000> and enter the Basic Auth credentials when prompted. On Windows, run `.venv\Scripts\python.exe app.py`.
 
+## Use the dashboard from an Android phone
+
+The dashboard is responsive and works in a mobile browser; a separate Android APK is not required. The scanner continues to run on the computer, while the phone displays and controls its dashboard.
+
+For a quick test on a trusted home or office Wi-Fi network:
+
+1. Connect the computer running the scanner and the Android phone to the same Wi-Fi network.
+2. Start the app with Waitress listening on the network interface:
+
+   ```bash
+   .venv/bin/waitress-serve --listen=0.0.0.0:5000 app:app
+   ```
+
+   On Windows, run `.venv\Scripts\waitress-serve.exe --listen=0.0.0.0:5000 app:app` from the activated virtual environment.
+3. Find the computer's local IPv4 address (for example, in its network settings) and open `http://COMPUTER-IP:5000` in Chrome on the phone, replacing `COMPUTER-IP` with that address.
+4. Sign in with `SCANNER_USERNAME` and `SCANNER_PASSWORD` from the computer's `.env` file. If the page does not load, check that the computer's firewall allows inbound TCP connections on port 5000 from the private network.
+
+You can use Chrome's **Add to Home screen** option to create a shortcut. This is a browser shortcut to the web app, not a standalone or offline Android app. Keep the computer and scanner server running while using it.
+
+**Security:** This quick LAN setup uses HTTP. Basic Auth credentials and dashboard traffic are not encrypted, so use it only on a trusted private network. Do not forward port 5000 to the internet or use this setup on public Wi-Fi. For access beyond a trusted LAN, put Waitress behind an HTTPS reverse proxy and use strong, unique credentials. The app's `HOST` setting applies when running `app.py` directly; the Waitress command above controls its own bind address.
+
 For a single-host WSGI deployment, run Waitress behind an HTTPS reverse proxy:
 
 ```bash
 .venv/bin/waitress-serve --listen=127.0.0.1:8080 app:app
 ```
 
-Do not expose Flask's development server directly to a network. Basic Auth must be protected by HTTPS outside localhost. The application does not provide individual user accounts, roles, TLS termination, or audit-retention controls. Its job coordination and current migration implementation are intended for one application host using SQLite.
+Do not expose Flask's development server directly to a network. Use Waitress for network access. Protect Basic Auth with HTTPS for durable use or any access beyond a trusted private LAN. The application does not provide individual user accounts, roles, TLS termination, or audit-retention controls. Its job coordination and current migration implementation are intended for one application host using SQLite.
 
 ## Run a scan
 
